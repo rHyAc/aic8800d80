@@ -3519,7 +3519,7 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
     /* Forward the information to the LMAC */
     if ((error = rwnx_send_me_sta_add(rwnx_hw, params, mac, rwnx_vif->vif_index,
                                       &me_sta_add_cfm)))
-        return error;
+        goto add_sta_out;
 
     // Check the status
     switch (me_sta_add_cfm.status)
@@ -3640,6 +3640,7 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
             break;
     }
 
+add_sta_out:
     rwnx_hw->adding_sta = false;
 
     return error;
@@ -3975,9 +3976,7 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
 #else
     struct rwnx_vif *rwnx_vif = netdev_priv(dev);
 #endif
-    struct rwnx_sta *sta;
-
-    sta = rwnx_get_sta(rwnx_hw, mac);
+    struct rwnx_sta *sta = rwnx_get_sta(rwnx_hw, mac);
     if (!sta)
     {
         /* Add the TDLS station */
@@ -3994,7 +3993,7 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
             /* Forward the information to the LMAC */
             if ((error = rwnx_send_me_sta_add(rwnx_hw, params, mac, rwnx_vif->vif_index,
                                               &me_sta_add_cfm)))
-                return error;
+                goto add_TDLS_out;
 
             // Check the status
             switch (me_sta_add_cfm.status)
@@ -4075,8 +4074,10 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
                     error = -EBUSY;
                     break;
             }
-
+add_TDLS_out:
             rwnx_hw->adding_sta = false;
+            if (error)
+                return error;
         } else  {
             return -EINVAL;
         }
